@@ -74,13 +74,13 @@ def WordListToCounter(wordList):
     print("Success to create Counter",end="\n")
     return count
 
-def CounterToCloudTags(count, topCount, defMinSize = 28, defMaxSize = 300):
+def CounterToCloudTags(count, topCount, defMinSize = 25, defMaxSize = 300):
         diff = (40 - int(len(count) / count.most_common(1)[0][1]))
         print('Diff (40 - WordKinds / HotKeyCount): '+str(diff))
         #if ( diff<=0 ):
          #   diff = 0
-        maxSizeAdd = int(diff)
-        minSizeAdd = int(diff)
+        maxSizeAdd = int(diff*1)
+        minSizeAdd = int(diff*1.5)
         print("Start top("+str(topCount)+') word to cloud tags, maxSize: '+str(defMaxSize)+'+'+str(maxSizeAdd)+' minSize: '+str(defMinSize)+'+'+str(minSizeAdd))
         tags = count.most_common(topCount)
         cloudTags = pytagcloud.make_tags(tags, minsize=defMinSize+minSizeAdd, maxsize=(defMaxSize+maxSizeAdd))
@@ -137,7 +137,7 @@ def PageToCloud(path,link,endPage=100):
 
     topWordCount = 200 #상위 단어 수
     print('Create CloudTags')
-    cloudTags = CounterToCloudTags(count,topWordCount,30,300)
+    cloudTags = CounterToCloudTags(count,topWordCount)
     print('Create Cloud')
     DrawCloud(cloudTags, path)
     print('Success to create Cloud (path:'+path+')')
@@ -203,7 +203,6 @@ def CSVToCloud(CSVPath, cloudPath):
     return err
 
 
-
 #프로그램 시작
 
 #예제 게시판 리스트 생성
@@ -260,8 +259,10 @@ boardDF = pd.read_excel(BoardIndexPath,index=False)
 if ( boardDF.columns[0] != 'BoardName' or boardDF.columns[1] != 'FileName' or  boardDF.columns[2] != 'Link' ):
     print('['+BoardIndexPath+'] is not true form. overwrite it')
     exampleDF.to_excel(BoardIndexPath,index=False)
+    boardDF = exampleDF
+else:
+    print('['+BoardIndexPath+'] is true form')
 
-boardDF = exampleDF
 print('Reading ['+BoardIndexPath+'] success',end='\n\n')
 
 #페이지수 범위
