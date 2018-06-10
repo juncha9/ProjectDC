@@ -80,7 +80,7 @@ def CounterToCloudTags(count, topCount, defMinSize = 25, defMaxSize = 300):
         #if ( diff<=0 ):
          #   diff = 0
         maxSizeAdd = int(diff*1)
-        minSizeAdd = int(diff*1.5)
+        minSizeAdd = int(diff*1.4)
         print("Start top("+str(topCount)+') word to cloud tags, maxSize: '+str(defMaxSize)+'+'+str(maxSizeAdd)+' minSize: '+str(defMinSize)+'+'+str(minSizeAdd))
         tags = count.most_common(topCount)
         cloudTags = pytagcloud.make_tags(tags, minsize=defMinSize+minSizeAdd, maxsize=(defMaxSize+maxSizeAdd))

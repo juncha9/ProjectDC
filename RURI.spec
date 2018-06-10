@@ -17,7 +17,6 @@ def get_konlpy_path():
 	konlpy_path = konlpy.__path__[0]
 	return konlpy_path
 
-
 a = Analysis(['./src/RURI.py'],
              pathex=['./src'],
              binaries=[],
