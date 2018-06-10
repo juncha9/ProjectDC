@@ -1,0 +1,6 @@
+src/Resources/csv/*.csv
+src/Resources/img/*.png
+dist/Resources/csv/*.csv
+dist/Resources/img/*.png
+build/
+desktop.ini
