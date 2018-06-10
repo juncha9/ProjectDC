@@ -6,6 +6,7 @@ import requests
 from konlpy.tag import Twitter
 from bs4 import BeautifulSoup
 from tkinter import Tk,Label,OptionMenu,StringVar,IntVar,PhotoImage,Button
+from PIL import Image
 import os.path
 import sys
 import time
@@ -178,28 +179,67 @@ def CSVToCloud(CSVPath, cloudPath):
 
 
 #프로그램 시작
-BoardIndexPath = 'Data\\BoardList.xlsx'
-if (not os.path.isfile(BoardIndexPath)):
-        print('error : ['+BoardIndexPath+'] is not exist')
-        sys.exit(1)
-#게시판 리스트
-boardDF = pd.read_excel(BoardIndexPath,index=False)
-print('Reading ['+BoardIndexPath+'] success',end='\n\n')
-print(boardDF,end="\n\n")
 
-#페이지수 범위
-searchPageNumList = [10,50,100,200,300,400]
+#예제 게시판 리스트 생성
+exampleDF = pd.DataFrame(columns=["BoardName","FileName","Link"])
+exampleDF = exampleDF.append({'BoardName':'유머게시판','Link':'community/board/300143','FileName':'Humor'},ignore_index=True)
+exampleDF = exampleDF.append({'BoardName':'정치유머게시판','Link':'community/board/300148','FileName':'PoliHumor'},ignore_index=True)
+exampleDF = exampleDF.append({'BoardName':'취미유머게시판','Link':'hobby/board/300143','FileName':'HobbyHumor'},ignore_index=True)
+exampleDF = exampleDF.append({'BoardName':'질문게시판','Link':'community/board/300142','FileName':'Question'},ignore_index=True)
+exampleDF = exampleDF.append({'BoardName':'자유게시판','Link':'community/board/300141','FileName':'Free'},ignore_index=True)
+exampleDF = exampleDF.append({'BoardName':'토론게시판','Link':'community/board/300152','FileName':'Topic'},ignore_index=True)
+exampleDF = exampleDF.append({'BoardName':'스포츠게시판','Link':'sports/board/300141','FileName':'Sports'},ignore_index=True)
+exampleDF = exampleDF.append({'BoardName':'소녀전선게시판','Link':'family/4382/board/184404','FileName':'GirlsFrontLine'},ignore_index=True)
+exampleDF = exampleDF.append({'BoardName':'WOW게시판','Link':'family/4454/board/100159','FileName':'WOW'},ignore_index=True)
 
 # **윈도우 초기화**
 window = Tk()
 
-# none 이미지 로딩
-noneImgPath = 'Data\\None.png'
-wordImage=PhotoImage(file=noneImgPath).subsample(x = 3)
-if (not os.path.isfile(noneImgPath)):
-        print('error : ['+noneImgPath+'] is not exist')
-        sys.exit(1)
-print('Reading ['+noneImgPath+'] success')
+#경로설정
+folderPath = 'Data'
+if (not os.path.isdir(folderPath)):
+        print('['+folderPath+'] is not exist. Create it')
+        os.makedirs(folderPath)
+
+folderPath = 'Resources'
+if (not os.path.isdir(folderPath)):
+        print('['+folderPath+'] is not exist. Create it')
+        os.makedirs(folderPath)
+
+folderPath = 'Resources\\img'
+if (not os.path.isdir(folderPath)):
+        print('['+folderPath+'] is not exist. Create it')
+        os.makedirs(folderPath)
+
+folderPath = 'Resources\\csv'
+if (not os.path.isdir(folderPath)):
+        print('['+folderPath+'] is not exist. Create it')
+        os.makedirs(folderPath)
+
+#기본 이미지 설정
+RImgPath = 'Data\\R.png'
+if (not os.path.isfile(RImgPath)):
+    print('['+RImgPath+'] is not exist. Create empty image')
+    noneImg = Image.new(size=(2000,2000),mode='RGB',color=(255,255,255))
+    noneImg.save(RImgPath,format="PNG")
+wordImg=PhotoImage(file=RImgPath).subsample(x = 3)
+print('Reading ['+RImgPath+'] success')
+
+#게시판 엑셀파일 로드
+BoardIndexPath = 'Data\\BoardList.xlsx'
+if (not os.path.isfile(BoardIndexPath)):
+        print('['+BoardIndexPath+'] is not exist. Create example xlsx')
+        exampleDF.to_excel(BoardIndexPath,index=False)
+boardDF = pd.read_excel(BoardIndexPath,index=False)
+if ( boardDF.columns[0] != 'BoardName' or boardDF.columns[1] != 'FileName' or  boardDF.columns[2] != 'Link' ):
+    print('['+BoardIndexPath+'] is not true form. overwrite it')
+    exampleDF.to_excel(BoardIndexPath,index=False)
+
+boardDF = exampleDF
+print('Reading ['+BoardIndexPath+'] success',end='\n\n')
+
+#페이지수 범위
+searchPageNumList = [10,50,100,200,300,400]
 
 #윈도우 창 설정
 window.title("Ruliweb.com Crawler")
@@ -207,7 +247,7 @@ window.geometry("670x785")
 
 #드랍다운 메뉴 변수설정
 boards = StringVar(window)
-boards.set(boardDF['boardName'].values[0])
+boards.set(boardDF['BoardName'].values[0])
 searchPageNum = IntVar(window)
 searchPageNum.set(searchPageNumList[0])
 
@@ -220,7 +260,7 @@ boardLabel.grid(row=0,column=0, columnspan=4 ,padx=2,pady=2)
 boardLabel = Label(window,text='Board Name')
 boardLabel.config(width="10",height="1")
 boardLabel.grid(row=1,column=0, padx=5 ,pady=5)
-boardDropDown = OptionMenu(window,boards,*boardDF['boardName'] )
+boardDropDown = OptionMenu(window,boards,*boardDF['BoardName'] )
 boardDropDown.config(width="24",height="1")
 boardDropDown.grid(row=1,column=1, padx=5 ,pady=5)
 
@@ -232,7 +272,7 @@ pagesDropDown.config(width="24",height="1")
 pagesDropDown.grid(row=1,column=3, padx=5 ,pady=5)
 
 #빈 이미지 로딩
-imageLabel = Label(window,image=wordImage)
+imageLabel = Label(window,image=wordImg)
 imageLabel.grid(row=3,pady=10,columnspan=4)
 
 #세번째줄 (버튼들)
@@ -240,8 +280,8 @@ def pageToCloudRun():
     selectBoard = boards.get()
     selectPageN = searchPageNum.get()
     print('Board: '+selectBoard +' SearchPages: '+ str(selectPageN) )
-    imagePath = 'Resources\\img\\'+DFIndexing(boardDF, selectBoard,'boardName','fileName')+'.png'
-    PageToCloud(imagePath,DFIndexing(boardDF, selectBoard,'boardName','link'),selectPageN)
+    imagePath = 'Resources\\img\\'+DFIndexing(boardDF, selectBoard,'BoardName','FileName')+'.png'
+    PageToCloud(imagePath,DFIndexing(boardDF, selectBoard,'BoardName','Link'),selectPageN)
     if (os.path.isfile(imagePath)):
         print('['+imagePath+'] is exist. open it')
         newImage= PhotoImage(file=imagePath).subsample(x = 3)
@@ -260,8 +300,8 @@ def pageToCSVRun():
     selectBoard = boards.get()
     selectPageN = searchPageNum.get()
     print('Board: '+selectBoard +' SearchPages: '+ str(selectPageN) )
-    CSVPath = 'Resources\\csv\\'+DFIndexing(boardDF, selectBoard,'boardName','fileName')+'.csv'
-    PageToCSV(CSVPath,DFIndexing(boardDF, selectBoard,'boardName','link'),selectPageN)
+    CSVPath = 'Resources\\csv\\'+DFIndexing(boardDF, selectBoard,'BoardName','FileName')+'.csv'
+    PageToCSV(CSVPath,DFIndexing(boardDF, selectBoard,'BoardName','Link'),selectPageN)
     print("PageToCSV end")
 pageToCSVButton = Button(window, text="CSV Create", command=pageToCSVRun)
 pageToCSVButton.config(width="43",height="1")
