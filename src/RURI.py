@@ -10,6 +10,7 @@ from PIL import Image
 import os.path
 import sys
 import time
+import re
 
 def GetHtml(url):
    _html = ""
@@ -55,8 +56,8 @@ def WordListToCounter(wordList):
     for title in wordList: #data변수에 크롤링한 제목들을 한줄로 만듬
         if (c<=1):
             print("Read 1000 data ... ",end="")
-        data += str(title)
-        data +="\n"
+        data += str(re.sub('[^가-힣0-9a-zA-Z\\s]','',title))
+        data +=" "
         if (c>1000):  #방대한 데이터이기 변수가 너무커지면 프로그램이 종료된다 때문에 반복문으로 처리하고 count변수만 증가시키기로 한다.
             c=0                     #1000개 도달
             nouns = twitter.nouns(data) #Twitter엔진에서 data를 가져와서 단어별로 추출하여 nouns변수에 저장 
@@ -74,13 +75,13 @@ def WordListToCounter(wordList):
     print("Success to create Counter",end="\n")
     return count
 
-def CounterToCloudTags(count, topCount, defMinSize = 25, defMaxSize = 300):
+def CounterToCloudTags(count, topCount, defMinSize = 20, defMaxSize = 300):
         diff = (40 - int(len(count) / count.most_common(1)[0][1]))
         print('Diff (40 - WordKinds / HotKeyCount): '+str(diff))
-        #if ( diff<=0 ):
-         #   diff = 0
+        if ( diff<=0 ):
+            diff = int(diff*0.5)
         maxSizeAdd = int(diff*1)
-        minSizeAdd = int(diff*1.4)
+        minSizeAdd = int(diff*1.5)
         print("Start top("+str(topCount)+') word to cloud tags, maxSize: '+str(defMaxSize)+'+'+str(maxSizeAdd)+' minSize: '+str(defMinSize)+'+'+str(minSizeAdd))
         tags = count.most_common(topCount)
         cloudTags = pytagcloud.make_tags(tags, minsize=defMinSize+minSizeAdd, maxsize=(defMaxSize+maxSizeAdd))
