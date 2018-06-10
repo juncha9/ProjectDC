@@ -10,10 +10,10 @@ Usage
 
 	2. 명령창에서 아래의 명령어를 실행
 
-		python -m pip install --upgrade pip
-		pip install pylint
-		pip install requests
-		pip install beautifulsoup4
+		python -m pip install --upgrade pip \n
+		pip install pylint \n
+		pip install requests \n
+		pip install beautifulsoup4 \n
 		pip install lxml
 		pip install pandas
 		pip install simplejson
