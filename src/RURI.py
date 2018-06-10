@@ -87,18 +87,36 @@ def CounterToCloudTags(count, topCount, defMinSize = 28, defMaxSize = 300):
         print('Success to create CloudTags')
         return cloudTags
 
+def CheckPageOverLimit(link,endPage):
+    URL  = 'http://bbs.ruliweb.com/'+link
+    html = GetHtml(URL)
+    soup = BeautifulSoup(html, "lxml") #BeatifulSoup을 이용해 정리 soup에 정리된 결과 저장됨
+    postNum = int(soup.find("span", {"class": "txt_explan"}).find("span",{"class":"num"}).string)
+    existPageNum = int(postNum/28) - 1
+    if (existPageNum >= endPage):
+        print('Searching pages not over exist pages')
+        return False
+    else:
+        print('Error : searching pages over exist pages')
+        return True
+
+
 def PageToCloud(path,link,endPage=100):
+    err = False
+    err = CheckPageOverLimit(link,endPage)
+    if (err == True):
+        return err 
     colname = ['title']
     wordDF = pd.DataFrame(columns=colname) #크롤링 정보를 담을 데이터프레임
     startPage = 1
-    pages = range(startPage,endPage)
+    pages = range(startPage,endPage+1)
     count = 1 
     print("Crawl start (page:"+str(startPage)+"~"+str(endPage)+")")
     for i in pages:
         URL  = 'http://bbs.ruliweb.com/'+link+'/list?page='+str(i)
         html = GetHtml(URL)
         soup = BeautifulSoup(html, "lxml") #BeatifulSoup을 이용해 정리 soup에 정리된 결과 저장됨
-        bodyContents = soup.find_all("tr", { "class" : "table_body" })
+        bodyContents = soup.find("table", { "class" : "board_list_table" }).find_all("tr",{"class":"table_body"})
         print("page "+str(count)+" reading ... ",end='')
         for content in bodyContents:
             if( content.find("a", {"class":"deco"}) ):
@@ -123,9 +141,14 @@ def PageToCloud(path,link,endPage=100):
     print('Create Cloud')
     DrawCloud(cloudTags, path)
     print('Success to create Cloud (path:'+path+')')
+    return err
 
 
 def PageToCSV(path,link,endPage=100):
+    err = False
+    err = CheckPageOverLimit(link,endPage)
+    if (err == True):
+        return err 
     colname = ['bid','assort','title','writer', 'suggest','hit','time','link']
     df = pd.DataFrame(columns=colname) #크롤링 정보를 담을 데이터프레임
     startPage = 1
@@ -133,11 +156,10 @@ def PageToCSV(path,link,endPage=100):
     count = 1 
     print("Crawl start (page:"+str(startPage)+"~"+str(endPage)+")")
     for i in pages:
-        
         URL  = 'http://bbs.ruliweb.com/'+link+'/list?page='+str(i)
         html = GetHtml(URL)
         soup = BeautifulSoup(html, "lxml") #BeatifulSoup을 이용해 정리 soup에 정리된 결과 저장됨
-        bodyContents = soup.find_all("tr", { "class" : "table_body" })
+        bodyContents = soup.find("table", { "class" : "board_list_table" }).find_all("tr",{"class":"table_body"})
         print("page "+str(count)+" reading ... ",end='')
         for content in bodyContents:
             if( content.find("a", {"class":"deco"}) ):
@@ -156,11 +178,14 @@ def PageToCSV(path,link,endPage=100):
         print("done",end='\n')
     df.to_csv(path,mode='w',encoding='utf-8')
     print("Success to create CSV (path:"+path+')')
+    return err
 
 def CSVToCloud(CSVPath, cloudPath):
+    err = False
     if (not os.path.isfile(CSVPath)):
         print('error : ['+CSVPath+'] is not exist')
-        return
+        err = True
+        return err
     df = pd.read_csv(CSVPath,encoding='utf-8')
     wordList =  df['title']
     print("Reading CSV success")
@@ -175,6 +200,7 @@ def CSVToCloud(CSVPath, cloudPath):
     print('Create Cloud')
     DrawCloud(cloudTags, cloudPath)
     print('Success to create Cloud (path:'+cloudPath+')')
+    return err
 
 
 
@@ -277,19 +303,23 @@ imageLabel.grid(row=3,pady=10,columnspan=4)
 
 #세번째줄 (버튼들)
 def pageToCloudRun():
+    err = False
     selectBoard = boards.get()
     selectPageN = searchPageNum.get()
     print('Board: '+selectBoard +' SearchPages: '+ str(selectPageN) )
     imagePath = 'Resources\\img\\'+DFIndexing(boardDF, selectBoard,'BoardName','FileName')+'.png'
-    PageToCloud(imagePath,DFIndexing(boardDF, selectBoard,'BoardName','Link'),selectPageN)
-    if (os.path.isfile(imagePath)):
-        print('['+imagePath+'] is exist. open it')
-        newImage= PhotoImage(file=imagePath).subsample(x = 3)
-        imageLabel.configure(image = newImage)
-        imageLabel.image = newImage
-        window.update()
+    err = PageToCloud(imagePath,DFIndexing(boardDF, selectBoard,'BoardName','Link'),selectPageN)
+    if (err == True):
+        print("PageToCloud Failed")
     else:
-        print('['+imagePath+'] is not exist. Something wrong')
+        if (os.path.isfile(imagePath)):
+            print('['+imagePath+'] is exist. open it')
+            newImage= PhotoImage(file=imagePath).subsample(x = 3)
+            imageLabel.configure(image = newImage)
+            imageLabel.image = newImage
+            window.update()
+        else:
+            print('['+imagePath+'] is not exist. Something wrong')
     print("PageToCloud end")
 
 pageToCloudButton = Button(window, text="Word Cloud Create",command=pageToCloudRun)
@@ -297,12 +327,17 @@ pageToCloudButton.config(width="43",height="1")
 pageToCloudButton.grid(row=2,column=0,padx=5 ,pady=5, columnspan=2)
 
 def pageToCSVRun():
+    err= False
     selectBoard = boards.get()
     selectPageN = searchPageNum.get()
     print('Board: '+selectBoard +' SearchPages: '+ str(selectPageN) )
     CSVPath = 'Resources\\csv\\'+DFIndexing(boardDF, selectBoard,'BoardName','FileName')+'.csv'
-    PageToCSV(CSVPath,DFIndexing(boardDF, selectBoard,'BoardName','Link'),selectPageN)
-    print("PageToCSV end")
+    err = PageToCSV(CSVPath,DFIndexing(boardDF, selectBoard,'BoardName','Link'),selectPageN)
+    if (err == True):
+        print("PageToCSV Failed")
+    else:
+        print("PageToCSV end")
+   
 pageToCSVButton = Button(window, text="CSV Create", command=pageToCSVRun)
 pageToCSVButton.config(width="43",height="1")
 pageToCSVButton.grid(row=2,column=2, padx=5 ,pady=5, columnspan=2)
